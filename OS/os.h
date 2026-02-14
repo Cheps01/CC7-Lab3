@@ -9,6 +9,10 @@ void os_read(char *buffer, int max_length);
 void uart_putc(char c);
 char uart_getc(void);
 void uart_putnum(unsigned int num);
+void uart_puthex(unsigned int num);
+
+// Debug functions
+void os_debug(const char *s, unsigned int num);
 
 // Timer functions
 void timer_init(void);

@@ -43,17 +43,12 @@ prefetch_handler:
 data_handler:
     b hang
 
-// TODO: Implement IRQ handler
-// This handler should:
-// 1. Save all registers (r0-r12, lr)
-// 2. Call the timer_irq_handler() function in C
-// 3. Restore all registers
-// 4. Return from interrupt using: subs pc, lr, #4
+// IRQ Handler
 irq_handler:
-    push {r0-r12, lr} @ Save all registers
+    push {r0-r12, lr}    @ Save all registers
     bl timer_irq_handler @ Call C handler
-    pop {r0-r12, lr} @ Restore registers
-    subs pc, lr, #4 @ Return from interrupt
+    pop {r0-r12, lr}     @ Restore registers
+    subs pc, lr, #4      @ Return from interrupt
     b hang
 
 fiq_handler:
@@ -70,19 +65,12 @@ GET32:
     ldr r0, [r0]
     bx lr
 
-// TODO: Implement enable_irq function
-// This function should:
-// 1. Read the current CPSR
-// 2. Clear the I-bit (bit 7) to enable IRQ interrupts
-// 3. Write back to CPSR
+// Interruption enable in CPSR (Current Program Status Register)
 .globl enable_irq
 enable_irq:
-    // Load CPSR (Current Program Status Register)
-    mrs r0, cpsr
-    // Clear I-bit
-    bic r0, r0, #0x80
-    // Write back CPSR
-    msr cpsr, r0
+    mrs r0, cpsr       @ Load CPSR
+    bic r0, r0, #0x80  @ Clear I-bit
+    msr cpsr, r0       @ Write back CPSR
     bx lr
 
 // Stack space allocation

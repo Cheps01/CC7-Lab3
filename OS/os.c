@@ -2,10 +2,10 @@
 
 // BeagleBone Black UART0 base address
 #define UART0_BASE     0x44E09000
-#define UART_THR       (UART0_BASE + 0x00)  // Transmit Holding Register
-#define UART_LSR       (UART0_BASE + 0x14)  // Line Status Register
-#define UART_LSR_THRE  0x20                  // Transmit Holding Register Empty
-#define UART_LSR_RXFE  0x10                  // Receive FIFO Empty
+#define UART_THR       (UART0_BASE + 0x00)       // Transmit Holding Register
+#define UART_LSR       (UART0_BASE + 0x14)       // Line Status Register
+#define UART_LSR_THRE  0x20                      // Transmit Holding Register Empty
+#define UART_LSR_RXFE  0x10                      // Receive FIFO Empty
 
 // BeagleBone Black DMTIMER2 base address
 #define DMTIMER2_BASE    0x48040000
@@ -19,7 +19,7 @@
 #define INTCPS_BASE      0x48200000
 #define INTC_MIR_CLEAR2  (INTCPS_BASE + 0xC8)    // Interrupt Mask Clear Register 2
 #define INTC_CONTROL     (INTCPS_BASE + 0x48)    // Interrupt Controller Control
-#define INTC_ILR68       (INTCPS_BASE + 0x110)   // Interrupt Line Register 68
+#define INTC_ILR68       (INTCPS_BASE + 0x210)   // Interrupt Line Register 68 (fixed offset from assignment code)
 
 // Clock Manager base address
 #define CM_PER_BASE      0x44E00000
@@ -85,26 +85,35 @@ void uart_putnum(unsigned int num) {
     uart_putc('\n');
 }
 
+// Function to send a number in hexadecimal via UART
+void uart_puthex(unsigned int num) {
+    char hex[] = "0123456789ABCDEF";
+    int i;
+    uart_putc('0');
+    uart_putc('x');
+    for (i = 28; i >= 0; i -= 4) {
+        uart_putc(hex[(num >> i) & 0xF]);
+    }
+}
+
+// Function to display a label and register value for debugging
+void os_debug(const char *s, unsigned int num) {
+    os_write(s);
+    os_write(": ");
+    uart_puthex(num);
+    uart_putc('\n');
+}
+
 // ============================================================================
 // Timer Functions
 // ============================================================================
 
-// TODO: Implement timer initialization
-// This function should:
-// 1. Enable the timer clock (CM_PER_TIMER2_CLKCTRL = 0x2)
-// 2. Unmask IRQ 68 in the interrupt controller (INTC_MIR_CLEAR2)
-// 3. Configure interrupt priority (INTC_ILR68 = 0x0)
-// 4. Stop the timer (TCLR = 0)
-// 5. Clear any pending interrupts (TISR = 0x7)
-// 6. Set the load value for 2 seconds (TLDR = 0xFE91CA00)
-// 7. Set the counter to the same value (TCRR = 0xFE91CA00)
-// 8. Enable overflow interrupt (TIER = 0x2)
-// 9. Start timer in auto-reload mode (TCLR = 0x3)
+// Timer initialization set for interruptions every 2 seconds
 void timer_init(void) {
     // Enable timer
     PUT32(CM_PER_TIMER2_CLKCTRL, 0x2);
     // Unmask interrupt controller
-    PUT32(INTC_MIR_CLEAR2, 0x1);
+    PUT32(INTC_MIR_CLEAR2, 0x10);
     // Set priority
     PUT32(INTC_ILR68, 0x0);
     // Stop and reset timer
@@ -121,11 +130,7 @@ void timer_init(void) {
     PUT32(TCLR, 0x3);
 }
 
-// TODO: Implement timer interrupt handler
-// This function should:
-// 1. Clear the timer interrupt flag (TISR = 0x2)
-// 2. Acknowledge the interrupt to the controller (INTC_CONTROL = 0x1)
-// 3. Print "Tick\n" via UART
+// Timer interrupt handler. It clears the interrupt flag and responds with a "Tick".
 void timer_irq_handler(void) {
     // Clear timer interrupt flag
     PUT32(TISR, 0x2);
@@ -147,15 +152,12 @@ unsigned int rand(void) {
 }
 
 int main(void) {
-    // TODO: Print initialization message
     os_write("Starting...\n");
-    // TODO: Initialize the timer using timer_init()
     timer_init();
     os_write("Timer initialized.\n");
-    // TODO: Enable interrupts using enable_irq()
     enable_irq();
-    // TODO: Print a message indicating interrupts are enabled
     os_write("Interrupts enabled.\n");
+
     // Main loop: continuously print random numbers
     while (1) {
         unsigned int random_num = rand() % 1000;
